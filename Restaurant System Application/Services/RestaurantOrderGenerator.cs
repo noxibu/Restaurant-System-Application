@@ -42,8 +42,9 @@ namespace Restaurant_System_Application.Services
             DateTime timeEnd;
             int visitorsNum;
 
+            List<RestaurantOrder> restaurantOrdersObjects = new List<RestaurantOrder>();
 
-            foreach(var table in tablesList)
+            foreach (var table in tablesList)
             {
                 
                 timeStart = DateTime.Now.AddMinutes(rand.Next(0, 59));
@@ -58,10 +59,15 @@ namespace Restaurant_System_Application.Services
                 if (bool.Parse(table[1]) != false && visitorsNum <= seatsAvailable)
                 {
 
-                    StreamWriter sw = File.AppendText(currentDir.GetCurrentDirectory() + "\\RestaurantOrders.csv");
+                    //StreamWriter sw = File.AppendText(currentDir.GetCurrentDirectory() + "\\RestaurantOrders.csv");
+
                     
+
                     //Customer arrives.
-                    sw.WriteLine($"{tableId},Arrival,{timeStart}");
+
+                    //restaurantOrdersObjects.Add(new RestaurantOrder(tableId, "Arrival", timeStart));
+
+                    //sw.WriteLine($"{tableId},Arrival,{timeStart}");
                     listItems.UpdateTable(tableId);
 
                     
@@ -71,35 +77,40 @@ namespace Restaurant_System_Application.Services
                         {
                             case 0:
                                 orderItem = listItems.OrderDrink();
-                                Console.WriteLine($"Table[{tableId}] ordered a drink");
+                                Console.WriteLine($"Table[{tableId}] ordered a drink, {orderItem[0]},{orderItem[1]}");
                                 break;
 
                             case 1:
                                 orderItem = listItems.OrderMeal();
-                                Console.WriteLine($"Table[{tableId}] ordered a meal");
+                                Console.WriteLine($"Table[{tableId}] ordered a meal, {orderItem[0]},{orderItem[1]}");
                                 break;
                             default:
                                 Console.WriteLine("Didn't order anything");
                                 break;
                         }
-                        sw.WriteLine($"{tableId},{orderItem[0]},{orderItem[1]}");
+                        restaurantOrdersObjects.Add(new RestaurantOrder(tableId, orderItem[0], decimal.Parse(orderItem[1])));
+                        //sw.WriteLine($"{tableId},{orderItem[0]},{orderItem[1]}");
 
                     }
 
                     //Customer leaves.
 
-                    timeEnd = timeStart.AddHours(rand.Next(0, 2)).AddMinutes(rand.Next(0, 59));
-                    sw.WriteLine($"{tableId},Departure,{timeEnd}");
+                    //timeEnd = timeStart.AddHours(rand.Next(0, 2)).AddMinutes(rand.Next(0, 59));
+
+                    //restaurantOrdersObjects.Add(new RestaurantOrder(tableId, "Departure", timeEnd));
+                    
+                    //sw.WriteLine($"{tableId},Departure,{timeEnd}");
                     listItems.UpdateTable(tableId);
+                    listItems.WriteRestaurantOrderObjects(restaurantOrdersObjects);
                     listItems.CalculateTableTotal(tableId);
-
-
-
-                    sw.Close();
+                    //sw.Close();
                 }
 
                 
             }
+
+
+            
 
 
 

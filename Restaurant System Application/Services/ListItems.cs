@@ -15,96 +15,114 @@ namespace Restaurant_System_Application.Services
 
         }
 
-        public void CalculateTableTotal(int tableId)
+        public void WriteRestaurantOrderObjects(List<RestaurantOrder> list)
         {
             DirectoryGenerator currentDir = new DirectoryGenerator();
-            //List<string> tablesReadList = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantTables.csv").ToList();
-            //List<string> ordersReadList = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantOrders.csv").ToList();
-
-            List<string> tablesReadList = new List<string>();
-            List<string> ordersReadList = new List<string>();
-
-            using (StreamReader reader = new StreamReader(currentDir.GetCurrentDirectory() + "\\RestaurantTables.csv"))
+            using (StreamWriter sw = new StreamWriter(currentDir.GetCurrentDirectory() + "\\RestaurantOrders.csv"))
             {
-                string line = reader.ReadLine();
-
-                while (line != null)
+                foreach(var item in list)
                 {
-                    tablesReadList.Add(line);
-                    line = reader.ReadLine();
-                }
-            }
-
-            using (StreamReader reader = new StreamReader(currentDir.GetCurrentDirectory() + "\\RestaurantOrders.csv"))
-            {
-                string line = reader.ReadLine();
-
-                while (line != null)
-                {
-                    ordersReadList.Add(line);
-                    line = reader.ReadLine();
+                    //sw.WriteLine($"{item.TableId},{item.CustomerAction},{item.Timestamp}");
+                    sw.WriteLine($"{item.TableId},{item.OrderItem},{item.ItemPrice}");
+                    //}
                 }
 
-                reader.Close();
+                sw.Close();
             }
+        }
+
+        public void WriteRestaurantTableObjects(List<RestaurantTable> list)
+        {
+            DirectoryGenerator currentDir = new DirectoryGenerator();
+
+            using (StreamWriter sw = new StreamWriter(currentDir.GetCurrentDirectory() + "\\RestaurantTables.csv"))
+            {
+                foreach (RestaurantTable table in list)
+                {
+                    sw.WriteLine($"{table.TableId},{table.TableOccupied},{table.PriceTotal},{table.SeatsAvailable}");
 
 
-            List<string> tableOrders = ordersReadList.Where(x => x.Split(",")[0] == tableId.ToString()).ToList();
-            
+                }
 
-            decimal tableTotal = 0;
+                sw.Close();
+            }
+        }
 
+        public List<RestaurantTable> ListToRestaurantTableObjects(List<string> tablesReadList)
+        {
             List<RestaurantTable> restaurantTablesObjects = new List<RestaurantTable>();
-            List<RestaurantOrder> restaurantOrdersObjects = new List<RestaurantOrder>();
 
-
-            foreach(string table in tablesReadList)
+            foreach (string table in tablesReadList)
             {
-                restaurantTablesObjects.Add(new RestaurantTable(int.Parse(table.Split(",")[0]), 
-                    bool.Parse(table.Split(",")[1]), 
-                    decimal.Parse(table.Split(",")[2]), 
+                restaurantTablesObjects.Add(new RestaurantTable(int.Parse(table.Split(",")[0]),
+                    bool.Parse(table.Split(",")[1]),
+                    decimal.Parse(table.Split(",")[2]),
                     int.Parse(table.Split(",")[3])));
             }
 
-            foreach(string order in ordersReadList)
+            return restaurantTablesObjects;
+
+        }
+
+
+        public List<RestaurantOrder> ListToRestaurantOrderObjects(List<string> ordersReadList)
+        {
+            List<RestaurantOrder> restaurantOrdersObjects = new List<RestaurantOrder>();
+
+            foreach (string order in ordersReadList)
             {
                 try
                 {
                     restaurantOrdersObjects.Add(new RestaurantOrder(int.Parse(order.Split(",")[0]),
                     order.Split(",")[1],
-                    decimal.Parse(order.Split(",")[3])));
-                } catch
+                    decimal.Parse(order.Split(",")[2])));
+                }
+                catch
                 {
-                    Console.WriteLine($"Cannot parse DateTime as Decimal. Value you're trying to parse is {order.Split(",")[3]}");
+                    Console.WriteLine($"Cannot parse DateTime as Decimal. Value you're trying to parse is {order.Split(",")[2]}");
                 }
 
-                
+
             }
 
+            return restaurantOrdersObjects;
+
+        }
+
+        public void CalculateTableTotal(int tableId)
+        {
+            DirectoryGenerator currentDir = new DirectoryGenerator();
+            //List<string> tablesReadList = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantTables.csv").ToList();
+            //List<string> ordersReadList = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantOrders.csv").ToList();
+            //List<string> tableOrders = ordersReadList.Where(x => x.Split(",")[0] == tableId.ToString()).ToList();
+            
+
+            decimal tableTotal = 0;
+
+            List<RestaurantTable> restaurantTablesObjects = ListToRestaurantTableObjects(File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantTables.csv").ToList());
+            List<RestaurantOrder> restaurantOrdersObjects = ListToRestaurantOrderObjects(File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantOrders.csv").ToList());
+
+            List<RestaurantOrder> tableOrders = restaurantOrdersObjects.Where(x => x.TableId == tableId).ToList();
+
+
+
+            Console.WriteLine(tableOrders.Count);
             List<RestaurantTable> restaurantTable = restaurantTablesObjects.Where( x => x.TableId == tableId ).ToList();
             int currentTableIndex = restaurantTablesObjects.FindIndex(x => x.TableId == tableId);
 
-            foreach(RestaurantOrder order in restaurantOrdersObjects)
+            foreach(RestaurantOrder order in tableOrders)
             {
                 tableTotal += order.ItemPrice;
+                Console.WriteLine("Order item price = "+order.ItemPrice);
             }
 
             restaurantTablesObjects[currentTableIndex].PriceTotal = tableTotal;
-
-
             
-            using (StreamWriter sw = new StreamWriter(currentDir.GetCurrentDirectory() + "\\RestaurantTables.csv"))
-            {
-                foreach (RestaurantTable table in restaurantTablesObjects)
-                {
-                    sw.WriteLine($"{table.TableId},{table.TableOccupied},{table.PriceTotal},{table.SeatsAvailable}");
 
-                    
-                }
+            //Write object to file.
+            WriteRestaurantTableObjects(restaurantTablesObjects);
 
-                sw.Close();
-            }
-            
+
 
 
 
@@ -147,16 +165,8 @@ namespace Restaurant_System_Application.Services
             }
 
 
-            using (StreamWriter sw = new StreamWriter(currentDir.GetCurrentDirectory() + "\\RestaurantTables.csv"))
-            {
-                foreach (RestaurantTable table in restaurantTablesObjects)
-                {
-                    sw.WriteLine($"{table.TableId},{table.TableOccupied},{table.PriceTotal},{table.SeatsAvailable}");
-                    
-                }
-
-                sw.Close();
-            }
+            //Write object to file.
+            WriteRestaurantTableObjects(restaurantTablesObjects);
 
 
 
