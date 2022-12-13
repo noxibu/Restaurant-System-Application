@@ -15,6 +15,31 @@ namespace Restaurant_System_Application.Services
 
         }
 
+        public void ShowDrinksMenu()
+        {
+            DirectoryGenerator currentDir = new DirectoryGenerator();
+            
+            List<string> drinksMenu = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\Drinks.csv").ToList();
+            Console.WriteLine("Drinks menu:");
+            foreach(string drink in drinksMenu)
+            {
+                Console.WriteLine($"{drink.Split(",")[0]}. {drink.Split(",")[1]}, { drink.Split(",")[2]} $");
+            }
+
+        }
+
+        public void ShowMealsMenu()
+        {
+            DirectoryGenerator currentDir = new DirectoryGenerator();
+
+            List<string> mealsMenu = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\Drinks.csv").ToList();
+            Console.WriteLine("Meals menu:");
+            foreach (string meal in mealsMenu)
+            {
+                Console.WriteLine($"{meal.Split(",")[0]}. {meal.Split(",")[1]}, {meal.Split(",")[2]} $");
+            }
+        }
+
         public void WriteRestaurantOrderObjects(List<RestaurantOrder> list)
         {
             DirectoryGenerator currentDir = new DirectoryGenerator();
@@ -39,7 +64,7 @@ namespace Restaurant_System_Application.Services
             {
                 foreach (RestaurantTable table in list)
                 {
-                    sw.WriteLine($"{table.TableId},{table.TableOccupied},{table.PriceTotal},{table.SeatsAvailable}");
+                    sw.WriteLine($"{table.TableId},{table.TableAvailable},{table.PriceTotal},{table.SeatsAvailable}");
 
 
                 }
@@ -151,13 +176,13 @@ namespace Restaurant_System_Application.Services
 
 
 
-            switch (restaurantTablesObjects[elementIndex].TableOccupied)
+            switch (restaurantTablesObjects[elementIndex].TableAvailable)
             {
                 case true:
-                    restaurantTablesObjects[elementIndex].TableOccupied = false;
+                    restaurantTablesObjects[elementIndex].TableAvailable = false;
                     break;
                 case false:
-                    restaurantTablesObjects[elementIndex].TableOccupied =  true;
+                    restaurantTablesObjects[elementIndex].TableAvailable =  true;
                     break;
                 default:
                     Console.WriteLine("Error: Cannot read RestaurantTables.csv data.");
@@ -170,6 +195,40 @@ namespace Restaurant_System_Application.Services
 
 
 
+
+        }
+
+
+
+
+        public void OrderDrink(int tableId, int itemId)
+        {
+            DirectoryGenerator currentDir = new DirectoryGenerator();
+            List<string> mealsFile = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\Drinks.csv").ToList();
+            List<string> mealsList = mealsFile.Where(x => x.Split(",")[0] == itemId.ToString()).ToList();
+
+            using (FileStream fs = new FileStream(currentDir.GetCurrentDirectory() + "\\RestaurantOrders.csv", FileMode.Append, FileAccess.Write))
+            using (StreamWriter sw = new StreamWriter(fs))
+            {
+                sw.WriteLine($"{mealsList[0].Split(",")[0]},{mealsList[0].Split(",")[1]},{mealsList[0].Split(",")[2]}");
+            }
+
+            Console.WriteLine($"Table [{tableId}] ordered {mealsList[0].Split(",")[1]}.");
+
+        }
+
+
+        public void OrderMeal(int tableId, int itemId)
+        {
+            DirectoryGenerator currentDir = new DirectoryGenerator();
+            List<string> mealsFile = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\Meals.csv").ToList();
+            List<string> mealsList = mealsFile.Where(x => x.Split(",")[0] == itemId.ToString()).ToList();
+
+            using (FileStream fs = new FileStream(currentDir.GetCurrentDirectory() + "\\RestaurantOrders.csv", FileMode.Append, FileAccess.Write))
+            using (StreamWriter sw = new StreamWriter(fs))
+            {
+                sw.WriteLine($"{mealsList[0].Split(",")[0]},{mealsList[0].Split(",")[1]},{mealsList[0].Split(",")[2]}");
+            }
 
         }
 

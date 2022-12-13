@@ -17,6 +17,61 @@ namespace Restaurant_System_Application.Services
 
         }
 
+        public void SeeAvailableTables(int visitorsNum)
+        {
+            DirectoryGenerator currentDir = new DirectoryGenerator();
+            List<List<int>> availableTables = new List<List<int>>();
+            List<string> restaurantTables = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantTables.csv").ToList();
+
+            List<string> unoccupiedTables = restaurantTables.Where(x => bool.Parse(x.Split(",")[1]) == true && int.Parse(x.Split(",")[3]) >= visitorsNum).ToList();
+
+            if(unoccupiedTables.Count > 0)
+            {
+                foreach (string table in unoccupiedTables)
+                {
+                    Console.WriteLine($"Table [{table.Split(",")[0]}] is available for {visitorsNum} visitor(s).");
+
+                    //availableTables.Add(new List<int> { int.Parse(table.Split(",")[0]), int.Parse(table.Split(",")[3]) });
+                }
+            } else
+            {
+                Console.WriteLine($"There are no available tables for {visitorsNum} guest(s).");
+            }
+
+            
+        }
+
+        public void SelectTable(int tableId)
+        {
+            DirectoryGenerator currentDir = new DirectoryGenerator();
+            List<string> restaurantTables = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantTables.csv").ToList();
+            ListItems listItems = new ListItems();
+            List<RestaurantTable> restaurantTableObjects = listItems.ListToRestaurantTableObjects(restaurantTables);
+
+
+            int elementIndex = restaurantTableObjects.FindIndex(x => x.TableId == tableId);
+
+            restaurantTableObjects[elementIndex].TableAvailable = !restaurantTableObjects[elementIndex].TableAvailable;
+            listItems.WriteRestaurantTableObjects(restaurantTableObjects);
+
+            if(restaurantTableObjects[elementIndex].TableAvailable == false)
+            {
+                Console.WriteLine($"Table [{tableId}] is now occupied.");
+            } else if(restaurantTableObjects[elementIndex].TableAvailable == true)
+            {
+                Console.WriteLine($"Table [{tableId}] is now available.");
+            } else
+            {
+                Console.WriteLine("Error: Cannot change table status.");
+            }
+
+        }
+
+
+
+
+
+
         public void GenerateOrders()
         {
             DirectoryGenerator currentDir = new DirectoryGenerator();
@@ -25,14 +80,14 @@ namespace Restaurant_System_Application.Services
 
             Random rand = new Random();
 
-            List<string> restaurantTablesFile = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantTables.csv").ToList();
-            List<string> restaurantMealsFile = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\Meals.csv").ToList();
-            List<string> restaurantDrinksFile = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\Drinks.csv").ToList();
+            List<string> restaurantTablesFile;
+            List<string> restaurantMealsFile;
+            List<string> restaurantDrinksFile;
             
 
-            List<List<string>> tablesList = listItems.SplitListToSublists(restaurantTablesFile);
-            List<List<string>> mealsList= listItems.SplitListToSublists(restaurantMealsFile);
-            List<List<string>> drinksList= listItems.SplitListToSublists(restaurantDrinksFile);
+            List<List<string>> tablesList = listItems.SplitListToSublists(File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantTables.csv").ToList());
+            List<List<string>> mealsList= listItems.SplitListToSublists(File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\Meals.csv").ToList());
+            List<List<string>> drinksList= listItems.SplitListToSublists(File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\Drinks.csv").ToList());
 
             List<string> orderItem = new List<string>();
             int tableId;
@@ -54,20 +109,16 @@ namespace Restaurant_System_Application.Services
                 visitorsNum = rand.Next(1, 6);
 
 
-                //Check if table is occupied.
+                //Check if table is occupied or seats available for visitorsNum
                 // If not occupied, change state and take orders.
                 if (bool.Parse(table[1]) != false && visitorsNum <= seatsAvailable)
                 {
 
-                    //StreamWriter sw = File.AppendText(currentDir.GetCurrentDirectory() + "\\RestaurantOrders.csv");
 
                     
 
                     //Customer arrives.
-
-                    //restaurantOrdersObjects.Add(new RestaurantOrder(tableId, "Arrival", timeStart));
-
-                    //sw.WriteLine($"{tableId},Arrival,{timeStart}");
+                    
                     listItems.UpdateTable(tableId);
 
                     
@@ -89,21 +140,16 @@ namespace Restaurant_System_Application.Services
                                 break;
                         }
                         restaurantOrdersObjects.Add(new RestaurantOrder(tableId, orderItem[0], decimal.Parse(orderItem[1])));
-                        //sw.WriteLine($"{tableId},{orderItem[0]},{orderItem[1]}");
 
                     }
 
-                    //Customer leaves.
-
-                    //timeEnd = timeStart.AddHours(rand.Next(0, 2)).AddMinutes(rand.Next(0, 59));
-
-                    //restaurantOrdersObjects.Add(new RestaurantOrder(tableId, "Departure", timeEnd));
-                    
-                    //sw.WriteLine($"{tableId},Departure,{timeEnd}");
+                    //Customer leaves
                     listItems.UpdateTable(tableId);
                     listItems.WriteRestaurantOrderObjects(restaurantOrdersObjects);
                     listItems.CalculateTableTotal(tableId);
-                    //sw.Close();
+                } else
+                {
+                    Console.WriteLine($"Couldn't seat {visitorsNum} people on table NO.{tableId} which seats {seatsAvailable} people.");
                 }
 
                 
