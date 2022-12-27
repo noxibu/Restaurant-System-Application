@@ -29,7 +29,7 @@ namespace Restaurant_System_Application.Services
             {
                 foreach (string table in unoccupiedTables)
                 {
-                    Console.WriteLine($"Table [{table.Split(",")[0]}] is available for {visitorsNum} visitor(s).");
+                    Console.WriteLine($"Table [{table.Split(",")[0]}] is available with {table.Split(",")[3]} seats.");
 
                     //availableTables.Add(new List<int> { int.Parse(table.Split(",")[0]), int.Parse(table.Split(",")[3]) });
                 }
@@ -41,28 +41,41 @@ namespace Restaurant_System_Application.Services
             
         }
 
-        public void SelectTable(int tableId)
+        public void SelectTable(int tableId, int visitorNum)
         {
             DirectoryGenerator currentDir = new DirectoryGenerator();
             List<string> restaurantTables = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantTables.csv").ToList();
             ListItems listItems = new ListItems();
             List<RestaurantTable> restaurantTableObjects = listItems.ListToRestaurantTableObjects(restaurantTables);
-
-
             int elementIndex = restaurantTableObjects.FindIndex(x => x.TableId == tableId);
 
-            restaurantTableObjects[elementIndex].TableAvailable = !restaurantTableObjects[elementIndex].TableAvailable;
-            listItems.WriteRestaurantTableObjects(restaurantTableObjects);
+            
+            if (restaurantTableObjects[elementIndex].SeatsAvailable >= visitorNum && restaurantTableObjects[elementIndex].TableAvailable == true)
+            {
+                restaurantTableObjects[elementIndex].TableAvailable = !restaurantTableObjects[elementIndex].TableAvailable;
+                restaurantTableObjects[elementIndex].PriceTotal = 0;
 
-            if(restaurantTableObjects[elementIndex].TableAvailable == false)
+
+                if (restaurantTableObjects[elementIndex].TableAvailable == false)
+                {
+                    Console.WriteLine($"Table [{tableId}] is now occupied.");
+                }
+                else if (restaurantTableObjects[elementIndex].TableAvailable == true)
+                {
+                    Console.WriteLine($"Table [{tableId}] is now available.");
+                }
+                else
+                {
+                    Console.WriteLine("Error: Cannot change table status.");
+                }
+                listItems.WriteRestaurantTableObjects(restaurantTableObjects);
+
+            } else if (restaurantTableObjects[elementIndex].SeatsAvailable < visitorNum)
             {
-                Console.WriteLine($"Table [{tableId}] is now occupied.");
-            } else if(restaurantTableObjects[elementIndex].TableAvailable == true)
+                Console.WriteLine($"Cannot seat {visitorNum} guests. Table [{tableId}] only seats {restaurantTableObjects[elementIndex].SeatsAvailable} guests.");
+            } else if(restaurantTableObjects[elementIndex].TableAvailable == false)
             {
-                Console.WriteLine($"Table [{tableId}] is now available.");
-            } else
-            {
-                Console.WriteLine("Error: Cannot change table status.");
+                Console.WriteLine($"Table [{restaurantTableObjects[elementIndex].TableId}] is not available.");
             }
 
         }

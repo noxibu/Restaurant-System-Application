@@ -15,6 +15,54 @@ namespace Restaurant_System_Application.Services
 
         }
 
+        public void ShowMenu()
+        {
+            DirectoryGenerator currentDir = new DirectoryGenerator();
+            List<string> drinksMenu = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\Drinks.csv").ToList();
+            List<string> mealsMenu = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\Drinks.csv").ToList();
+            bool loop = true;
+
+            Console.WriteLine("Choose [1] for drinks menu");
+            Console.WriteLine("Choose [2] for meals menu");
+            Console.WriteLine("Choose [x] to cancel");
+
+            
+
+            while(loop == true)
+            {
+
+                switch (Console.ReadLine())
+                {
+                    case "1":
+                        Console.WriteLine("Drinks menu:");
+                        foreach (string drink in drinksMenu)
+                        {
+                            Console.WriteLine($"{drink.Split(",")[0]}. {drink.Split(",")[1]}, {drink.Split(",")[2]} $");
+                        }
+
+                        loop = false;
+
+                        break;
+                    case "2":
+                        foreach (string meal in mealsMenu)
+                        {
+                            Console.WriteLine($"{meal.Split(",")[0]}. {meal.Split(",")[1]}, {meal.Split(",")[2]} $");
+                        }
+                        loop = false;
+                        break;
+                    case "x":
+                        loop = false;
+                        break;
+                    default:
+                        Console.WriteLine("Please choose between [1], [2] and [x]");
+                        break;
+                }
+
+            }
+
+
+        }
+
         public void ShowDrinksMenu()
         {
             DirectoryGenerator currentDir = new DirectoryGenerator();
@@ -117,28 +165,23 @@ namespace Restaurant_System_Application.Services
         public void CalculateTableTotal(int tableId)
         {
             DirectoryGenerator currentDir = new DirectoryGenerator();
-            //List<string> tablesReadList = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantTables.csv").ToList();
-            //List<string> ordersReadList = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantOrders.csv").ToList();
-            //List<string> tableOrders = ordersReadList.Where(x => x.Split(",")[0] == tableId.ToString()).ToList();
             
 
             decimal tableTotal = 0;
 
             List<RestaurantTable> restaurantTablesObjects = ListToRestaurantTableObjects(File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantTables.csv").ToList());
-            List<RestaurantOrder> restaurantOrdersObjects = ListToRestaurantOrderObjects(File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantOrders.csv").ToList());
+            List<RestaurantOrder> restaurantOrdersObjects = ListToRestaurantOrderObjects(File.ReadAllLines(currentDir.GetCurrentDirectory() + $"\\{tableId}-TableOrders.csv").ToList());
 
             List<RestaurantOrder> tableOrders = restaurantOrdersObjects.Where(x => x.TableId == tableId).ToList();
 
 
 
-            Console.WriteLine(tableOrders.Count);
             List<RestaurantTable> restaurantTable = restaurantTablesObjects.Where( x => x.TableId == tableId ).ToList();
             int currentTableIndex = restaurantTablesObjects.FindIndex(x => x.TableId == tableId);
 
             foreach(RestaurantOrder order in tableOrders)
             {
                 tableTotal += order.ItemPrice;
-                Console.WriteLine("Order item price = "+order.ItemPrice);
             }
 
             restaurantTablesObjects[currentTableIndex].PriceTotal = tableTotal;
@@ -198,22 +241,90 @@ namespace Restaurant_System_Application.Services
 
         }
 
+        public void VisitorReceipt(int tableId)
+        {
+            DirectoryGenerator currentDir = new DirectoryGenerator();
+            List<RestaurantOrder> restaurantOrdersObjects = ListToRestaurantOrderObjects(File.ReadAllLines(currentDir.GetCurrentDirectory() + $"\\{tableId}-TableOrders.csv").ToList()).Where(x => x.TableId == tableId).ToList();
 
 
+            decimal totalPrice = 0;
+            DateTime timestamp = DateTime.Now;
+            using (StreamWriter writer = new StreamWriter(currentDir.GetCurrentDirectory() + $"\\{tableId}-TableReceipt-{timestamp.Month}-{timestamp.Day}-{timestamp.Hour}-{timestamp.Minute}.csv"))
+            {
+                foreach (RestaurantOrder restaurantOrder in restaurantOrdersObjects)
+                {
+                Console.WriteLine($"{restaurantOrder.OrderItem}, {restaurantOrder.ItemPrice}$");
+                Console.WriteLine($"------------------");
+                totalPrice += restaurantOrder.ItemPrice;
+
+
+               
+                    writer.WriteLine($"{restaurantOrder.OrderItem}, {restaurantOrder.ItemPrice}$");
+                }
+
+                writer.WriteLine($"Your total is {totalPrice}$");
+            }
+
+            
+
+            Console.WriteLine($"Your total is: {totalPrice}$");
+
+
+            CalculateTableTotal(tableId);
+            UpdateTable(tableId);
+
+            if (File.Exists(currentDir.GetCurrentDirectory() + $"{tableId}-TableOrders.csv"))
+            {
+                File.Delete(currentDir.GetCurrentDirectory() + $"{tableId}-TableOrders.csv");
+
+            }
+
+
+
+
+            
+
+        }
+
+        public void RestaurantReceipt()
+        {
+            DirectoryGenerator currentDir = new DirectoryGenerator();
+
+            List<RestaurantOrder> restaurantOrdersObjects = ListToRestaurantOrderObjects(File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\RestaurantOrders.csv").ToList());
+
+            decimal moneyNow = 0;
+
+            foreach(var order in restaurantOrdersObjects)
+            {
+                moneyNow += order.ItemPrice;
+            }
+
+            Console.WriteLine($"[{DateTime.Now}] {restaurantOrdersObjects.Count} orders, totalling to {moneyNow} $");
+
+
+        }
 
         public void OrderDrink(int tableId, int itemId)
         {
             DirectoryGenerator currentDir = new DirectoryGenerator();
-            List<string> mealsFile = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\Drinks.csv").ToList();
-            List<string> mealsList = mealsFile.Where(x => x.Split(",")[0] == itemId.ToString()).ToList();
+            List<string> drinksFile = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\Drinks.csv").ToList();
+            List<string> drinksList = drinksFile.Where(x => x.Split(",")[0] == itemId.ToString()).ToList();
 
-            using (FileStream fs = new FileStream(currentDir.GetCurrentDirectory() + "\\RestaurantOrders.csv", FileMode.Append, FileAccess.Write))
-            using (StreamWriter sw = new StreamWriter(fs))
+            using (FileStream tableOrder = new FileStream(currentDir.GetCurrentDirectory() + $"\\{tableId}-TableOrders.csv", FileMode.Append, FileAccess.Write))
+            using (StreamWriter sw = new StreamWriter(tableOrder))
             {
-                sw.WriteLine($"{mealsList[0].Split(",")[0]},{mealsList[0].Split(",")[1]},{mealsList[0].Split(",")[2]}");
+                sw.WriteLine($"{tableId},{drinksList[0].Split(",")[1]},{drinksList[0].Split(",")[2]}");
             }
 
-            Console.WriteLine($"Table [{tableId}] ordered {mealsList[0].Split(",")[1]}.");
+            using (FileStream restaurantOrder = new FileStream(currentDir.GetCurrentDirectory() + $"\\RestaurantOrders.csv", FileMode.Append, FileAccess.Write))
+            using (StreamWriter sw = new StreamWriter(restaurantOrder))
+            {
+                sw.WriteLine($"{tableId},{drinksList[0].Split(",")[1]},{drinksList[0].Split(",")[2]}");
+            }
+
+            Console.WriteLine($"Table [{tableId}] ordered {drinksList[0].Split(",")[1]}.");
+
+            CalculateTableTotal(tableId);
 
         }
 
@@ -224,11 +335,21 @@ namespace Restaurant_System_Application.Services
             List<string> mealsFile = File.ReadAllLines(currentDir.GetCurrentDirectory() + "\\Meals.csv").ToList();
             List<string> mealsList = mealsFile.Where(x => x.Split(",")[0] == itemId.ToString()).ToList();
 
-            using (FileStream fs = new FileStream(currentDir.GetCurrentDirectory() + "\\RestaurantOrders.csv", FileMode.Append, FileAccess.Write))
-            using (StreamWriter sw = new StreamWriter(fs))
+            using (FileStream tableOrder = new FileStream(currentDir.GetCurrentDirectory() + $"\\{tableId}-TableOrders.csv", FileMode.Append, FileAccess.Write))
+            using (StreamWriter sw = new StreamWriter(tableOrder))
             {
                 sw.WriteLine($"{mealsList[0].Split(",")[0]},{mealsList[0].Split(",")[1]},{mealsList[0].Split(",")[2]}");
             }
+
+            using (FileStream restaurantOrder = new FileStream(currentDir.GetCurrentDirectory() + $"\\RestaurantOrders.csv", FileMode.Append, FileAccess.Write))
+            using (StreamWriter sw = new StreamWriter(restaurantOrder))
+            {
+                sw.WriteLine($"{mealsList[0].Split(",")[0]},{mealsList[0].Split(",")[1]},{mealsList[0].Split(",")[2]}");
+            }
+
+            Console.WriteLine($"Table [{tableId}] ordered {mealsList[0].Split(",")[1]}.");
+
+            CalculateTableTotal(tableId);
 
         }
 
@@ -285,6 +406,75 @@ namespace Restaurant_System_Application.Services
             return splitList;
         }
         
+        public void TakeOrder()
+        {
+            
+
+            Console.WriteLine("Choose [1] to order a drink");
+            Console.WriteLine("Choose [2] to order a meal");
+            Console.WriteLine("Choose [x] to cancel");
+
+            bool loop = true;
+            string tableId;
+            string itemId;
+
+            while(loop == true)
+            {
+                switch (Console.ReadLine())
+                {
+                    case "1":
+                        ShowDrinksMenu();
+                        Console.WriteLine("Enter table number:");
+                        tableId = Console.ReadLine();
+                        Console.WriteLine("Enter item number from the menu:");
+                        itemId = Console.ReadLine();
+
+                        try
+                        {
+                            OrderDrink(int.Parse(tableId), int.Parse(itemId));
+                        }
+                        catch
+                        {
+                            Console.WriteLine("Cannot take order with given parameters.");
+                        }
+
+                        loop = false;
+                        
+                        break;
+                    case "2":
+                        ShowMealsMenu();
+                        Console.WriteLine("Enter table number:");
+                        tableId = Console.ReadLine();
+                        Console.WriteLine("Enter item number from the menu:");
+                        itemId = Console.ReadLine();
+
+                        try
+                        {
+                            OrderMeal(int.Parse(tableId), int.Parse(itemId));
+                            
+                        }
+                        catch
+                        {
+                            Console.WriteLine("Cannot take order with given parameters.");
+
+                        }
+
+                        loop = false;
+
+                        break;
+                    case "x":
+                        Console.WriteLine("Cancelling...");
+                        loop = false;
+                        break;
+
+                    default:
+                        Console.WriteLine("Choose between [1], [2] and [x]");
+                        break;
+                }
+            }
+
+        }
+
 
         }
     }

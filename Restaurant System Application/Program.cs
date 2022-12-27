@@ -7,28 +7,12 @@ namespace Restaurant_System_Application
     {
         static void Main(string[] args)
         {
-            //RestaurantTableRepository restaurantTableRepository = new RestaurantTableRepository(10);
 
-            ListItems listItems = new ListItems();
-            RestaurantOrderGenerator generator = new RestaurantOrderGenerator();
-            //generator.GenerateOrders();
-            
-            generator.SeeAvailableTables(8);
+            RestaurantSystem jKeeper = new RestaurantSystem();
 
-            //foreach(var table in availableTableIds)
-            //{
-            //    Console.WriteLine($"Table number {table[0]} is available and seats {table[1]} person(s).");
-            //}
+            jKeeper.StartSystem();
 
-            //listItems.UpdateTable(1);
-
-            //listItems.OrderMeal(2, 4);
-            listItems.OrderDrink(2, 4);
-
-
-            //listItems.ShowMealsMenu();
-            //generator.SelectTable(5);
-
+            //Cannot create xUnit test
 
         }
     }
